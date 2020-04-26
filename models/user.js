@@ -16,9 +16,10 @@ module.exports = (sequelize, DataTypes) => {
   },{ // 테이블에 대한 설정
     charset: 'utf8',
     collate: 'utf8_general_ci', // 한글 저장
-  })
+  });
   User.associate = (db) => {
-    
+    db.User.hasMany(db.Post);
+    db.User.hasMany(db.Comment);
   };
   return User;
 }
