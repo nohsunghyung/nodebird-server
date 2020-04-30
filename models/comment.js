@@ -4,7 +4,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT, // 긴 글
       allowNull: false,
     }
-  },{
+  }, {
     charset: 'utf8mb4',
     collate: 'utf8mb4_general_ci',
   });
@@ -13,4 +13,4 @@ module.exports = (sequelize, DataTypes) => {
     db.Comment.belongsTo(db.Post);
   };
   return Comment;
-}
+};

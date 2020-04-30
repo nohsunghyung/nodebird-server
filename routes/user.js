@@ -1,45 +1,30 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const passport = require('passport');
-const { isLoggedIn, isNotLoggedIn } = require('./middlewares');
 const db = require('../models');
+const { isLoggedIn, isNotLoggedIn } = require('./middlewares');
 
 const router = express.Router();
 
-router.post('/');
-
-// 회원가입
-router.post('/', isNotLoggedIn, async (req, res, next) => {
+router.post('/', isNotLoggedIn, async (req, res, next) => { // 회원가입
   try {
     const hash = await bcrypt.hash(req.body.password, 12);
     const exUser = await db.User.findOne({
       where: {
         email: req.body.email,
-      }
-    })
-
-    if (exUser) { // 이미 회원가입되어있을경우
+      },
+    });
+    if (exUser) { // 이미 회원가입되어있으면
       return res.status(403).json({
-        errorCode: 1, // 프론트와 상의된 에러코드
-        message: '이미 존재하는 이메일 입니다.',
-      })
+        errorCode: 1,
+        message: '이미 회원가입되어있습니다.',
+      });
     }
-
-    // const newUser = await db.User.create({
-    //   email: req.body.email,
-    //   password: hash,
-    //   nickname: req.body.nickname,
-    // });
-
-    //return res.status(201).json(newUser); // 성공했을경우
-
-    // 회원가입 후 바로 로그인
     await db.User.create({
       email: req.body.email,
       password: hash,
       nickname: req.body.nickname,
-    });
-
+    }); // HTTP STATUS CODE
     passport.authenticate('local', (err, user, info) => {
       if (err) {
         console.error(err);
@@ -48,7 +33,7 @@ router.post('/', isNotLoggedIn, async (req, res, next) => {
       if (info) {
         return res.status(401).send(info.reason);
       }
-      return req.login(user, async (err) => { // 세션에 사용자 정보 저장
+      return req.login(user, async (err) => { // 세션에다 사용자 정보 저장 (어떻게? serializeUser)
         if (err) {
           console.error(err);
           return next(err);
@@ -56,13 +41,12 @@ router.post('/', isNotLoggedIn, async (req, res, next) => {
         return res.json(user);
       });
     })(req, res, next);
-  } catch (error) {
-    console.log(error);
-    return next(error); // 에러났을경우
+  } catch (err) {
+    console.log(err);
+    return next(err);
   }
-})
+});
 
-// 로그인
 router.post('/login', isNotLoggedIn, (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
     if (err) {
@@ -72,7 +56,7 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
     if (info) {
       return res.status(401).send(info.reason);
     }
-    return req.login(user, async (err) => { // 세션에 사용자 정보 저장
+    return req.login(user, async (err) => { // 세션에다 사용자 정보 저장 (어떻게? serializeUser)
       if (err) {
         console.error(err);
         return next(err);
@@ -80,15 +64,14 @@ router.post('/login', isNotLoggedIn, (req, res, next) => {
       return res.json(user);
     });
   })(req, res, next);
-})
+});
 
-// 로그아웃
-router.post('/logout', isLoggedIn, (req, res) => {
+router.post('/logout', isLoggedIn, (req, res) => { // 실제 주소는 /user/logout
   if (req.isAuthenticated()) {
     req.logout();
     req.session.destroy(); // 선택사항
     return res.status(200).send('로그아웃 되었습니다.');
   }
-})
+});
 
 module.exports = router;
