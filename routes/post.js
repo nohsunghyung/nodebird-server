@@ -38,11 +38,22 @@ router.post('/', isLoggedIn, async (req, res, next) => { // POST /post
       })));
       await newPost.addHashtags(result.map(r => r[0]));
     }
+    if(req.body.image) {
+      if(Array.isArray(req.body.image)){
+        await Promise.all(req.body.image.map((image) => {
+          return db.Image.create({ src: image, PostId: newPost.id });
+        }))
+      } else {
+        await db.Image.create({ src: req.body.image, PostId: newPost.id })
+      }
+    }
     const fullPost = await db.Post.findOne({
       where: { id: newPost.id },
       include: [{
         model: db.User,
         attributes: ['id', 'nickname'],
+      }, {
+        model: db.Image,
       }],
     });
     return res.json(fullPost);
@@ -68,11 +79,25 @@ router.get('/:id/comments', async (req, res, next) => {
         model: db.User,
         attributes: ['id', 'nickname'],
       }],
-      order: [['createdAt','ASC']]
-    })
-    
+      order: [['createdAt','ASC']],
+    });
+    res.json(comments);
   } catch (error) {
     next(error);
+  }
+})
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    await db.Post.destroy({
+      where: {
+        id: req.params.id,
+      }
+    });
+    res.send('삭제했습니다.');
+  } catch (err) {
+    console.error(err);
+    next(err)
   }
 })
 
@@ -98,7 +123,6 @@ router.post('/:id/comment', isLoggedIn, async (req, res, next) => {
         attributes: ['id', 'nickname'],
       }],
     });
-
     return res.json(comment);
   } catch (error) {
     next(error)
